@@ -1,0 +1,40 @@
+[
+	{
+		"instructions": ["Kavarj össze mindent.", "Süsd ki őket."],
+		"cook_time": 30,
+		"description": "Cicám nagyon nagyon szereti.",
+		"name": "Gofri vanília sodóval",
+		"servings": 12,
+		"category_uid": "rp63o6SgD8vrTtdX9Eon",
+		"prep_time": 30,
+		"image_url": "https://cdn.loveandlemons.com/wp-content/uploads/2024/12/waffle.jpg",
+		"tips": ["Nem lehet benne elég vanília aroma!", "Ne égesd le!"],
+		"ingredients": [
+			{
+				"name": "Tészta",
+				"ingredients": [
+					"2 pcs eggs",
+					"1/4 cup sugar",
+					"1 1/2 cups cold milk",
+					"1/4 cup melted butter",
+					"1/2 tsp vanilla extract",
+					"2 cups flour",
+					"1/2 tsp baking soda "
+				]
+			},
+			{
+				"name": "Vanília Sodó",
+				"ingredients": [
+					"3 pcs egg yolks",
+					"65 sugar",
+					"1 tsp vanilla extract",
+					"20g flour",
+					"15g cornstarch ",
+					"350ml milk"
+				]
+			}
+		],
+		"date_added": { "seconds": 1745013600, "nanoseconds": 598000000 },
+		"id": "6uAoIJoVgGqhbnjvfkQU"
+	}
+]
