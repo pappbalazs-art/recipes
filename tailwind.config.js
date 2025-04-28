@@ -14,6 +14,7 @@ const config = {
 			},
 			colors: {
 				primary: "#97AC82",
+				secondary: "#21371E",
 			},
 			animation: {
 				"fade-in": "fade-in .25s ease-in-out",
