@@ -9,10 +9,16 @@ import { Spinner } from "@heroui/spinner";
 import RecipesContainer from "@/components/recipes-container";
 import Header from "@/components/header";
 import { SharedSelection } from "@heroui/system";
+import AddRecipeButton from "@/components/add-recipe-button";
+import { useDisclosure } from "@heroui/modal";
+import CreateRecipeModal from "@/components/create-recipe-modal";
 
 export default function Home() {
 	const [recipes, setRecipes] = useState<any>([]);
+	const [categories, setCategories] = useState<any>([]);
 	const [loading, setLoading] = useState<boolean>(true);
+
+	const createRecipeModalDisclosure = useDisclosure();
 
 	const [searchFilter, setSearchFilter] = useState<string>("");
 	const [recipesOrder, setRecipesOrder] = useState<SharedSelection>(
@@ -63,14 +69,38 @@ export default function Home() {
 		const recipesQuery = query(recipesRef, recipesQueryOrder);
 		const recipesSnapshot = await getDocs(recipesQuery);
 
-		setRecipes(
+		await setRecipes(
 			recipesSnapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
 		);
-		setLoading(false);
+	};
+
+	const updateCategories = async () => {
+		const categoriesRef = collection(database, "categories");
+		const categoriesSnapshot = await getDocs(categoriesRef);
+
+		await setCategories(
+			categoriesSnapshot.docs.map((doc) => ({
+				...doc.data(),
+				id: doc.id,
+			}))
+		);
+	};
+
+	const updateData = async () => {
+		await updateRecipes();
+		await updateCategories();
+
+		if (loading) {
+			setLoading(false);
+		}
+
+		if (createRecipeModalDisclosure.isOpen) {
+			createRecipeModalDisclosure.onClose();
+		}
 	};
 
 	useEffect(() => {
-		updateRecipes();
+		updateData();
 	}, []);
 
 	return (
@@ -81,6 +111,16 @@ export default function Home() {
 				recipesOrder={recipesOrder}
 				setRecipesOrder={handleRecipesOrderSelection}
 			/>
+
+			<CreateRecipeModal
+				isOpen={createRecipeModalDisclosure.isOpen}
+				onOpen={createRecipeModalDisclosure.onOpen}
+				onOpenChange={createRecipeModalDisclosure.onOpenChange}
+				categories={categories}
+				updateData={updateData}
+			/>
+
+			<AddRecipeButton onPress={createRecipeModalDisclosure.onOpen} />
 
 			{loading && (
 				<Spinner

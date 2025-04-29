@@ -147,7 +147,9 @@ function Recipe() {
 														lineThrough
 														key={key}
 													>
-														{ingredient}
+														{ingredient.measurement}{" "}
+														{ingredient.unit}{" "}
+														{ingredient.name}
 													</Checkbox>
 												)
 											)}
