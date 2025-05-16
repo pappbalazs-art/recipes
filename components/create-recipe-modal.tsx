@@ -1,6 +1,5 @@
 import { Autocomplete, AutocompleteItem } from "@heroui/autocomplete";
 import { Button } from "@heroui/button";
-import { Form } from "@heroui/form";
 import {
 	Modal,
 	ModalBody,
@@ -8,11 +7,13 @@ import {
 	ModalFooter,
 	ModalHeader,
 } from "@heroui/modal";
-import { FormEvent, useState } from "react";
+import { SetStateAction, useState } from "react";
 import RecipeInput from "./recipe-input";
 import RecipeNumberInput from "./recipe-number-input";
 import { addDoc, collection, Timestamp } from "firebase/firestore";
 import { database } from "@/firebase";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTrash } from "@fortawesome/free-solid-svg-icons";
 
 export default function CreateRecipeModal({
 	isOpen,
@@ -28,105 +29,241 @@ export default function CreateRecipeModal({
 	updateData: Function;
 }) {
 	const [loading, setLoading] = useState<boolean>(false);
-	const [categoryValue, setCategoryValue] = useState<string>("");
-	const [categoryKey, setCategoryKey] = useState<any>(null);
-	const [elements, setElements] = useState<Array<any>>([
+	const [name, setName] = useState<string | undefined>(undefined);
+	const [categoryValue, setCategoryValue] = useState<string | undefined>(
+		undefined
+	);
+	const [categoryKey, setCategoryKey] = useState<string | undefined>(
+		undefined
+	);
+	const [description, setDescription] = useState<string | undefined>(
+		undefined
+	);
+	const [prepTime, setPrepTime] = useState<number | undefined>(undefined);
+	const [cookTime, setCookTime] = useState<number | undefined>(undefined);
+	const [servings, setServings] = useState<number | undefined>(undefined);
+	const [ingredients, setIngredients] = useState<Array<any>>([
 		{
-			key: "element_1",
-			ingredients: ["element_1_ingredient_1"],
+			name: "",
+			ingredients: [
+				{
+					measurement: "",
+					unit: "",
+					name: "",
+				},
+			],
 		},
 	]);
-	const [instructions, setInstructions] = useState<Array<any>>([
-		"instruction_1",
-	]);
-	const [tips, setTips] = useState<Array<any>>(["tip_1"]);
+	const [instructions, setInstructions] = useState<Array<string>>([""]);
+	const [tips, setTips] = useState<Array<string>>([""]);
 
-	const handleCreateRecipe = async (e: FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		setLoading(true);
-
-		const data = Object.fromEntries(new FormData(e.currentTarget));
-
-		let category = categoryKey;
-		let ingredientsArray: any[] = [];
-		let instructionsArray: any[] = [];
-		let tipsArray: any[] = [];
-
-		elements.map((element) => {
-			const ingredientsElement: any = {
-				name: data[[element.key, "_name"].join("")],
-				ingredients: [],
-			};
-
-			element.ingredients.map((ingredient: any) => {
-				ingredientsElement.ingredients = [
-					...ingredientsElement.ingredients,
-					{
-						measurement:
-							data[[ingredient, "_measurement"].join("")],
-						unit: data[[ingredient, "_unit"].join("")],
-						name: data[[ingredient, "_name"].join("")],
-					},
-				];
-			});
-
-			ingredientsArray = [...ingredientsArray, ingredientsElement];
-		});
-
-		instructions.map((instruction) => {
-			instructionsArray = [...instructionsArray, data[instruction]];
-		});
-
-		tips.map((tip) => {
-			tipsArray = [...tipsArray, data[tip]];
-		});
-
-		if (categoryValue && !categoryKey) {
-			const { id } = await addDoc(collection(database, "categories"), {
-				name: categoryValue,
-			});
-
-			category = id;
-		}
-
-		const recipe: any = {
-			name: data.name,
-			prep_time: Number(data.prep_time),
-			cook_time: Number(data.cook_time),
-			servings: Number(data.servings),
-			date_added: Timestamp.now(),
-			ingredients: ingredientsArray,
-			category_uid: category,
-		};
-
-		if (data.description) {
-			recipe.description = data.description;
-		}
-
-		if (!(instructionsArray.length === 1 || instructionsArray[0] === "")) {
-			recipe.instructions = instructionsArray.filter(
-				(instruction) => instruction !== ""
-			);
-		}
-
-		if (!(tipsArray.length === 1 || tipsArray[0] === "")) {
-			recipe.tips = tipsArray.filter((tip) => tip !== "");
-		}
-
-		await addDoc(collection(database, "recipes"), recipe);
-		await updateData();
-
-		setCategoryValue("");
-		setCategoryKey(null);
-		setElements([
+	const handleAddElement = (): void => {
+		setIngredients([
+			...ingredients,
 			{
-				key: "element_1",
-				ingredients: ["element_1_ingredient_1"],
+				name: "",
+				ingredients: [
+					{
+						measurement: "",
+						unit: "",
+						name: "",
+					},
+				],
 			},
 		]);
-		setInstructions(["instruction_1"]);
-		setTips(["tips_1"]);
+	};
+
+	const handleAddIngredient = (elementKey: number): void => {
+		setIngredients(
+			ingredients.map((ingredient, key: number) => {
+				if (key === elementKey) {
+					return {
+						...ingredient,
+						ingredients: [
+							...ingredient.ingredients,
+							{
+								measurement: "",
+								unit: "",
+								name: "",
+							},
+						],
+					};
+				}
+
+				return ingredient;
+			})
+		);
+	};
+
+	const handleAddInstruction = (): void => {
+		setInstructions([...instructions, ""]);
+	};
+
+	const handleAddTip = (): void => {
+		setTips([...tips, ""]);
+	};
+
+	const handleRemoveElement = (elementKey: number): void => {
+		setIngredients(
+			ingredients.filter(
+				(ingredient: any, key: number) => key !== elementKey
+			)
+		);
+	};
+
+	const handleRemoveIngredient = (
+		elementKey: number,
+		ingredientKey: number
+	): void => {
+		setIngredients(
+			ingredients.map((element: any, key: number) => {
+				if (key === elementKey) {
+					return {
+						...element,
+						ingredients: element.ingredients.filter(
+							(ingredient: any, key: number) =>
+								key !== ingredientKey
+						),
+					};
+				}
+
+				return element;
+			})
+		);
+	};
+
+	const handleRemoveInstruction = (instructionKey: number): void => {
+		setInstructions(
+			instructions.filter(
+				(instruction: any, key: number) => key !== instructionKey
+			)
+		);
+	};
+
+	const handleRemoveTip = (tipKey: number): void => {
+		setTips(tips.filter((tip: any, key: number) => key !== tipKey));
+	};
+
+	const handleElementNameChange = (
+		elementKey: any,
+		value: SetStateAction<string | undefined>
+	): void => {
+		setIngredients(
+			ingredients.map((element: any, key: number) => {
+				if (key === elementKey) {
+					return {
+						...element,
+						name: value,
+					};
+				}
+
+				return element;
+			})
+		);
+	};
+
+	const handleIngredientInputChange = (
+		elementKey: number,
+		ingredientKey: number,
+		input: string,
+		value: SetStateAction<string | undefined>
+	): void => {
+		setIngredients(
+			ingredients.map((element: any, key: number) => {
+				if (key === elementKey) {
+					return {
+						...element,
+						ingredients: element.ingredients.map(
+							(ingredient: any, key: number) => {
+								if (key === ingredientKey) {
+									return {
+										...ingredient,
+										[input]: value,
+									};
+								}
+
+								return ingredient;
+							}
+						),
+					};
+				}
+
+				return element;
+			})
+		);
+	};
+
+	const handleInstructionInputChange = (
+		instructionKey: number,
+		value: SetStateAction<string | undefined>
+	): void => {
+		setInstructions(
+			instructions.map((instruction: any, key: number) => {
+				if (key === instructionKey) {
+					return value;
+				}
+
+				return instruction;
+			})
+		);
+	};
+
+	const handleTipInputChange = (
+		tipKey: number,
+		value: SetStateAction<string | undefined>
+	): void => {
+		setTips(
+			tips.map((tip: any, key: number) => {
+				if (key === tipKey) {
+					return value;
+				}
+
+				return tip;
+			})
+		);
+	};
+
+	const handleCreateRecipe = async () => {
+		setLoading(true);
+
+		await addDoc(collection(database, "recipes"), {
+			name,
+			category_uid: categoryKey,
+			description,
+			prep_time: prepTime,
+			cook_time: cookTime,
+			servings,
+			ingredients,
+			instructions,
+			tips,
+			date_added: Timestamp.now(),
+		});
+		await updateData();
+
 		setLoading(false);
+		onOpenChange();
+
+		setName(undefined);
+		setCategoryValue(undefined);
+		setCategoryKey(undefined);
+		setDescription(undefined);
+		setPrepTime(undefined);
+		setCookTime(undefined);
+		setServings(undefined);
+		setIngredients([
+			{
+				name: "",
+				ingredients: [
+					{
+						measurement: "",
+						unit: "",
+						name: "",
+					},
+				],
+			},
+		]);
+		setInstructions([""]);
+		setTips([""]);
 	};
 
 	return (
@@ -148,94 +285,140 @@ export default function CreateRecipeModal({
 						<ModalHeader className="flex flex-col gap-2">
 							Create new recipe
 						</ModalHeader>
-						<Form
-							className="w-full"
-							validationBehavior="aria"
-							onSubmit={handleCreateRecipe}
-						>
-							<ModalBody className="w-full">
-								<RecipeInput label="Recipe name" name="name" />
-								<Autocomplete
-									label="Category"
-									name="category"
-									variant="bordered"
-									allowsCustomValue
-									defaultItems={categories}
-									onInputChange={(value: string) =>
-										setCategoryValue(value)
-									}
-									onSelectionChange={(id: any) =>
-										setCategoryKey(id)
-									}
-								>
-									{(item: any) => (
-										<AutocompleteItem key={item.id}>
-											{item.name}
-										</AutocompleteItem>
-									)}
-								</Autocomplete>
-								<RecipeInput
-									label="Description"
-									name="description"
-								/>
-								<RecipeNumberInput
-									label="Prep time"
-									name="prep_time"
-									endContent={
-										<p className="text-small">mins</p>
-									}
-								/>
-								<RecipeNumberInput
-									label="Cook Time"
-									name="cook_time"
-									endContent={
-										<p className="text-small">mins</p>
-									}
-								/>
-								<RecipeNumberInput
-									label="Servings"
-									name="servings"
-								/>
+						<ModalBody className="w-full">
+							<RecipeInput
+								label="Recipe name"
+								value={name}
+								onValueChange={setName}
+							/>
+							<Autocomplete
+								label="Category"
+								name="category"
+								variant="bordered"
+								defaultItems={categories}
+								onInputChange={(value: string) =>
+									setCategoryValue(value)
+								}
+								onSelectionChange={(id: any) =>
+									setCategoryKey(id)
+								}
+							>
+								{(item: any) => (
+									<AutocompleteItem key={item.id}>
+										{item.name}
+									</AutocompleteItem>
+								)}
+							</Autocomplete>
+							<RecipeInput
+								label="Description"
+								value={description}
+								onValueChange={setDescription}
+							/>
+							<RecipeNumberInput
+								label="Prep time"
+								endContent={<p className="text-small">mins</p>}
+								value={prepTime}
+								onValueChange={setPrepTime}
+							/>
+							<RecipeNumberInput
+								label="Cook Time"
+								endContent={<p className="text-small">mins</p>}
+								value={cookTime}
+								onValueChange={setCookTime}
+							/>
+							<RecipeNumberInput
+								label="Servings"
+								value={servings}
+								onValueChange={setServings}
+							/>
 
-								{elements.map((element: any, key: number) => (
+							{ingredients.map(
+								(element: any, elementKey: number) => (
 									<div
 										className="element-container flex flex-col gap-4 py-5"
-										key={key}
+										key={elementKey}
 									>
 										<RecipeInput
 											label="Element name"
-											name={[element.key, "_name"].join(
-												""
-											)}
+											value={element.name}
+											onValueChange={(value) =>
+												handleElementNameChange(
+													elementKey,
+													value
+												)
+											}
 										/>
 
 										{element.ingredients.map(
-											(ingredient: any, key: number) => (
+											(
+												ingredient: any,
+												ingredientKey: number
+											) => (
 												<div
 													className="input-wrapper flex flex-row gap-2"
-													key={key}
+													key={ingredientKey}
 												>
 													<RecipeInput
 														className="w-20"
-														name={[
-															ingredient,
-															"_measurement",
-														].join("")}
+														value={
+															ingredient.measurement
+														}
+														onValueChange={(
+															value
+														) =>
+															handleIngredientInputChange(
+																elementKey,
+																ingredientKey,
+																"measurement",
+																value
+															)
+														}
 													/>
 													<RecipeInput
 														className="w-20"
-														name={[
-															ingredient,
-															"_unit",
-														].join("")}
+														value={ingredient.unit}
+														onValueChange={(
+															value
+														) =>
+															handleIngredientInputChange(
+																elementKey,
+																ingredientKey,
+																"unit",
+																value
+															)
+														}
 													/>
 													<RecipeInput
 														className="w-55"
-														name={[
-															ingredient,
-															"_name",
-														].join("")}
+														value={ingredient.name}
+														onValueChange={(
+															value
+														) =>
+															handleIngredientInputChange(
+																elementKey,
+																ingredientKey,
+																"name",
+																value
+															)
+														}
 													/>
+
+													<Button
+														className="min-w-5"
+														color="danger"
+														variant="solid"
+														onPress={() =>
+															handleRemoveIngredient(
+																elementKey,
+																ingredientKey
+															)
+														}
+													>
+														<FontAwesomeIcon
+															icon={faTrash}
+															className="block"
+														/>
+													</Button>
 												</div>
 											)
 										)}
@@ -245,122 +428,112 @@ export default function CreateRecipeModal({
 											color="primary"
 											variant="bordered"
 											onPress={() =>
-												setElements(
-													elements.map((p) =>
-														p.key === element.key
-															? {
-																	...p,
-																	ingredients:
-																		[
-																			...p.ingredients,
-																			[
-																				element.key,
-																				"_ingredient_",
-																				element
-																					.ingredients
-																					.length +
-																					1,
-																			].join(
-																				""
-																			),
-																		],
-																}
-															: p
-													)
-												)
+												handleAddIngredient(elementKey)
 											}
 										>
 											Add ingredient
 										</Button>
+
+										<Button
+											className="w-full font-bold"
+											color="danger"
+											variant="solid"
+											onPress={() =>
+												handleRemoveElement(elementKey)
+											}
+										>
+											Remove element
+										</Button>
 									</div>
-								))}
+								)
+							)}
 
-								<Button
-									className="w-full font-bold"
-									color="primary"
-									variant="bordered"
-									onPress={() =>
-										setElements([
-											...elements,
-											{
-												key: [
-													"element_",
-													elements.length + 1,
-												].join(""),
-												ingredients: [
-													[
-														"element_",
-														elements.length + 1,
-														"_ingredient_1",
-													].join(""),
-												],
-											},
-										])
-									}
-								>
-									Add element
-								</Button>
+							<Button
+								className="w-full font-bold"
+								color="primary"
+								variant="bordered"
+								onPress={handleAddElement}
+							>
+								Add element
+							</Button>
 
-								<p className="text-lg font-bold uppercase pt-4">
-									Instructions
-								</p>
+							<p className="text-lg font-bold uppercase pt-4">
+								Instructions
+							</p>
 
-								{instructions.map(
-									(instruction: any, key: any) => (
-										<RecipeInput
-											name={instruction}
-											key={key}
-										/>
-									)
-								)}
+							{instructions.map((instruction: any, key: any) => (
+								<div key={key} className="flex flex-grow gap-2">
+									<RecipeInput
+										value={instruction}
+										onValueChange={(value) =>
+											handleInstructionInputChange(
+												key,
+												value
+											)
+										}
+									/>
 
-								<Button
-									className="w-full font-bold"
-									color="primary"
-									variant="bordered"
-									onPress={() =>
-										setInstructions([
-											...instructions,
+									<Button
+										className="min-w-5"
+										color="danger"
+										variant="solid"
+										onPress={() =>
+											handleRemoveInstruction(key)
+										}
+									>
+										<FontAwesomeIcon icon={faTrash} />
+									</Button>
+								</div>
+							))}
 
-											[
-												"instruction_",
-												instructions.length + 1,
-											].join(""),
-										])
-									}
-								>
-									Add instruction
-								</Button>
+							<Button
+								className="w-full font-bold"
+								color="primary"
+								variant="bordered"
+								onPress={handleAddInstruction}
+							>
+								Add instruction
+							</Button>
 
-								<p className="text-lg font-bold uppercase pt-4">
-									Tips
-								</p>
+							<p className="text-lg font-bold uppercase pt-4">
+								Tips
+							</p>
 
-								{tips.map((tip: any, key: any) => (
-									<RecipeInput name={tip} key={key} />
-								))}
+							{tips.map((tip: any, key: any) => (
+								<div key={key} className="flex flex-grow gap-2">
+									<RecipeInput
+										value={tip}
+										onValueChange={(value) =>
+											handleTipInputChange(key, value)
+										}
+									/>
 
-								<Button
-									className="w-full font-bold"
-									color="primary"
-									variant="bordered"
-									onPress={() =>
-										setTips([
-											...tips,
+									<Button
+										className="min-w-5"
+										color="danger"
+										variant="solid"
+										onPress={() => handleRemoveTip(key)}
+									>
+										<FontAwesomeIcon icon={faTrash} />
+									</Button>
+								</div>
+							))}
 
-											["tip_", tips.length + 1].join(""),
-										])
-									}
-								>
-									Add tip
-								</Button>
-							</ModalBody>
-							<ModalFooter className="w-full">
-								<Button
-									className="w-full"
-									color="primary"
-									type="submit"
-									/*isDisabled={
+							<Button
+								className="w-full font-bold"
+								color="primary"
+								variant="bordered"
+								onPress={handleAddTip}
+							>
+								Add tip
+							</Button>
+						</ModalBody>
+						<ModalFooter className="w-full">
+							<Button
+								className="w-full"
+								color="primary"
+								type="submit"
+								/*isDisabled={
 										!(
 											name &&
 											prepTime &&
@@ -368,12 +541,12 @@ export default function CreateRecipeModal({
 											servings
 										)
 									}*/
-									isLoading={loading}
-								>
-									Add recipe
-								</Button>
-							</ModalFooter>
-						</Form>
+								isLoading={loading}
+								onPress={handleCreateRecipe}
+							>
+								Add recipe
+							</Button>
+						</ModalFooter>
 					</>
 				)}
 			</ModalContent>
